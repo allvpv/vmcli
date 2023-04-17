@@ -176,8 +176,14 @@ Omit mac address for a generated address.
     @Option(name: .shortAndLong, help: "Bootloader to use (efi or linux)")
     var bootloader: BootLoader = BootLoader.linux
 
-    @Option(name: .shortAndLong, help: "EFI variables file")
+    @Option(name: .shortAndLong, help: "EFI variable store file path")
     var efivars: String?
+
+    @Flag(name: [.short, .customLong("efivars-create")], help: """
+Create new EFI variable store at specified path instead of trying to load \
+the already created one
+""")
+    var efivars_create: Bool = false
 
     @Option(name: .shortAndLong, help: "Kernel to use")
     var kernel: String?
@@ -218,11 +224,25 @@ Omit mac address for a generated address.
             if efivars == nil {
                 throw ValidationError("EfiVars not specified")
             }
-            let vmEfiVarsURL = URL(fileURLWithPath: efivars!)
-            let vmBootLoader = VZEFIBootLoader()
-            vmBootLoader.variableStore = VZEFIVariableStore(url: vmEfiVarsURL)
 
+            let vmBootLoader = VZEFIBootLoader()
+            let efivarsURL = URL(fileURLWithPath: efivars!)
             vmCfg.bootLoader = vmBootLoader
+
+            if !efivars_create {
+                if !FileManager.default.fileExists(atPath: efivars!) {
+                    fatalError("EFI variable store does not exist.")
+                }
+
+                let existingEfiVars = VZEFIVariableStore(url: efivarsURL)
+                vmBootLoader.variableStore = existingEfiVars
+            } else {
+                guard let newEfiVars =
+                    try? VZEFIVariableStore(creatingVariableStoreAt: efivarsURL) else {
+                        fatalError("Failed to create the EFI variable store.")
+                    }
+                vmBootLoader.variableStore = newEfiVars
+            }
         }
 
         // set up tty
