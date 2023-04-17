@@ -1,6 +1,5 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 // Add an extra #if checkable symbol on Big Sur, to work around a seeming Swift bug around
@@ -16,7 +15,7 @@ if #available(macOS 12, *) {
 let package = Package(
     name: "dealer",
     platforms: [
-        .macOS(.v11),
+        .macOS(.v13),
     ],
     products: [
         .executable(name: "vmcli", targets: ["vmcli"]),
@@ -25,10 +24,12 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.0.0"),
     ],
     targets: [
-        .target(name: "vmcli",
-                dependencies: [
-                    .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                ],
-                swiftSettings: swiftSettings),
+        .executableTarget(
+            name: "vmcli",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: swiftSettings
+        ),
     ]
 )

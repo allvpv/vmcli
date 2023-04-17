@@ -4,6 +4,7 @@ import Virtualization
 
 enum BootLoader: String, ExpressibleByArgument {
     case linux
+    case efi
 }
 
 enum SizeSuffix: UInt64, ExpressibleByArgument {
@@ -172,8 +173,11 @@ Omit mac address for a generated address.
     @Option(help: "Enable / Disable Memory Ballooning")
     var balloon: Bool = true
 
-    @Option(name: .shortAndLong, help: "Bootloader to use")
+    @Option(name: .shortAndLong, help: "Bootloader to use (efi or linux)")
     var bootloader: BootLoader = BootLoader.linux
+
+    @Option(name: .shortAndLong, help: "EFI variables file")
+    var efivars: String?
 
     @Option(name: .shortAndLong, help: "Kernel to use")
     var kernel: String?
@@ -208,6 +212,16 @@ Omit mac address for a generated address.
             if cmdline != nil {
                 vmBootLoader.commandLine = cmdline!
             }
+            vmCfg.bootLoader = vmBootLoader
+
+        case BootLoader.efi:
+            if efivars == nil {
+                throw ValidationError("EfiVars not specified")
+            }
+            let vmEfiVarsURL = URL(fileURLWithPath: efivars!)
+            let vmBootLoader = VZEFIBootLoader()
+            vmBootLoader.variableStore = VZEFIVariableStore(url: vmEfiVarsURL)
+
             vmCfg.bootLoader = vmBootLoader
         }
 
